@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "OpenAI for Grasshopper": {
+      "commandName": "Project"
+    },
+    "Profile 1": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files\\Rhino 8 WIP\\System\\Rhino.exe"
+    }
+  }
+}
