@@ -63,6 +63,16 @@ namespace OpenAI_for_Grasshopper.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Canvas_at_13_49_43 {
+            get {
+                object obj = ResourceManager.GetObject("Canvas at 13;49;43", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap OpenAI_logo_24x24 {
             get {
                 object obj = ResourceManager.GetObject("OpenAI logo 24x24", resourceCulture);
