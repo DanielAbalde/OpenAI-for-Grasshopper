@@ -19,7 +19,7 @@ Keep in mind that it is still a work in progress, not everything has been tested
 - [ ] Moderation
 - [ ] Rate limit support
 
-### How to use
+### Set up
 1. Download last [release](https://github.com/DanielAbalde/OpenAI-for-Grasshopper/releases).
 2. Unzip and move 'Open AI for Grasshopper' folder to your Grasshopper libraries folder.
 3. Download [Sample.gh](https://github.com/DanielAbalde/OpenAI-for-Grasshopper/releases) file and open it. There are errors on components because it needs your API key.
