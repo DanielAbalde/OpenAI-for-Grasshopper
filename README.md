@@ -20,7 +20,7 @@ Keep in mind that it is still a work in progress, not everything has been tested
 - [ ] Rate limit support
 
 ### Set up
-1. Download last [release](https://github.com/DanielAbalde/OpenAI-for-Grasshopper/releases).
+1. Download lastest [release](https://github.com/DanielAbalde/OpenAI-for-Grasshopper/releases).
 2. Unzip and move 'Open AI for Grasshopper' folder to your Grasshopper libraries folder.
 3. Download [Sample.gh](https://github.com/DanielAbalde/OpenAI-for-Grasshopper/releases) file and open it. There are errors on components because it needs your API key.
 4. Log-in or create an OpenAI account from [OpenAI site](https://beta.openai.com/).
