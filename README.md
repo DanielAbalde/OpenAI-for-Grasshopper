@@ -1,8 +1,8 @@
 # OpenAI for Grasshopper
 
-This Grasshopper plugin (.gha) is a quick implementation of the OpenAI API for .NET: https://github.com/betalgo/openai  
+This Grasshopper plugin (.gha) is a implementation of the OpenAI API for .NET: https://github.com/betalgo/openai that I made quickly to play with the OpenAI API from Grasshopper.
 
-I made in a few hours the necessary components to play with the OpenAI API. Keep in mind that it is still a work in progress, not everything has been tested, and it may not be continued.
+Keep in mind that it is still a work in progress, not everything has been tested, and it may not be continued. Also note that OpenAI has a paid API, so it's not free to use.
 
 <img style="center" src=".\Resources\Canvas at 13;49;43.png"></img>		  
 
