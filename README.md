@@ -7,7 +7,7 @@ Keep in mind that it is still a work in progress, not everything has been tested
 <img style="center" src=".\Resources\Canvas at 13;49;43.png"></img>		  
 
 ### Features
-- [ ] ChatGPT (coming soon)
+- [x] ChatGPT
 - [x] Image (DALL·E)
 - [x] Models
 - [x] Completions
@@ -15,7 +15,8 @@ Keep in mind that it is still a work in progress, not everything has been tested
 - [x] Embeddings
 - [x] Files (untested)
 - [x] Fine-tunes (untested)
-- [ ] Mars
+- [x] Codex
+- [ ] Whisper
 - [ ] Moderation
 - [ ] Rate limit support
 

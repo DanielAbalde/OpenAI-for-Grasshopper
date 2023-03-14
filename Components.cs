@@ -11,6 +11,11 @@ using OpenAI.GPT3.ObjectModels.ResponseModels.FineTuneResponseModels;
 using OpenAI.GPT3.ObjectModels.ResponseModels.FileResponseModels;
 using System.Drawing;
 using System.Net;
+using System.Windows.Forms;
+using OpenAI.GPT3.ObjectModels;
+using OpenAI.GPT3.ObjectModels.RequestModels;
+using GH_IO.Serialization;
+using static OpenAI.GPT3.ObjectModels.Models;
 
 /*
 360a36db-b8df-4559-bb9e-9118d512acad
@@ -31,12 +36,12 @@ e70a8928-d012-4139-acdb-d5eda7c6d745
 64e40d78-5f29-4f6e-875a-1194155a57a7
 b0e255f6-28a6-4ec0-8bac-9ae9f09c62a7
 fb46c7c8-8ca2-4250-9cdb-d92d5e69a98b
-0044a2b1-6c2d-4a93-b6a6-80de5932b5ea
-ac4df529-d20f-4021-a18a-1f54a92353c5
-297cfb51-5e41-48b6-a7fc-3c3f9c614481
-54e9cd9a-381b-4cfb-8605-38042fe03f86
-fba0d734-0e1a-4404-aaa5-8fc0b71a7122
-62b04def-2904-4669-ae68-2bc9a75d09cc
+
+
+
+
+
+
 
 */
 
@@ -100,8 +105,7 @@ namespace OpenAI_for_Grasshopper
     }
 
     public abstract class Comp_BaseResponse<T> : GH_TaskCapableComponent<T> where T : BaseResponse
-    {
-        public override GH_Exposure Exposure => GH_Exposure.secondary;
+    { 
         protected override Bitmap Icon => Properties.Resources.OpenAI_logo_24x24;
 
         public Comp_BaseResponse(string name, string nickname, string description) : base(name, nickname, description, "Extra", "OpenAI") { }
@@ -154,20 +158,64 @@ namespace OpenAI_for_Grasshopper
             } 
         }
     }
+
+    public abstract class Comp_BaseResponseWithMenuModels<T> : Comp_BaseResponse<T> where T : BaseResponse
+    {
+        private string[] _models;
+
+        public string SelectedModel => GetValue("SelectedModel", string.Empty);
+         
+        public Comp_BaseResponseWithMenuModels(string name, string nickname, string description, params string[] models) : base(name, nickname, description)
+        { 
+            _models = models.ToArray();
+            SetSelectedModel();
+        }
+
+        public void SetSelectedModel(string? model = null)
+        { 
+            SetValue("SelectedModel", model ?? _models.FirstOrDefault());
+            ValuesChanged();
+        }
+
+        protected override void AppendAdditionalComponentMenuItems(System.Windows.Forms.ToolStripDropDown menu)
+        { 
+            base.AppendAdditionalComponentMenuItems(menu);
+            if(_models != null && _models.Length > 0) {
+                Menu_AppendSeparator(menu);
+                var selectedModel = GetValue("SelectedModel", string.Empty);
+                foreach(var model in _models) {
+                    Menu_AppendItem(menu, model, OnMenuModelChanged, true, selectedModel == model).Tag = model;
+                } 
+            } 
+        }
+
+        private void OnMenuModelChanged(object? sender, EventArgs e)
+        {
+            RecordUndoEvent("OpenAI model changed");
+            SetSelectedModel((string)((ToolStripMenuItem)sender).Tag);
+            ExpireSolution(true);
+
+        }
+
+        protected override void ValuesChanged()
+        {
+            Message = GetValue("SelectedModel", string.Empty);
+        }
+    }
     #endregion
-     
-    #region Expo1
+
+    #region Primary
     public class Comp_OpenAIService : Comp_Base
     {
         public override Guid ComponentGuid => new Guid("fa5eeb5e-fecf-44df-b3b6-9a1b13bea2d2");
         public override GH_Exposure Exposure => GH_Exposure.primary;
 
-        public Comp_OpenAIService() : base("Open AI Service", "Open AI", "Open AI client service") { }
+        public Comp_OpenAIService() : base("OpenAI Service", "OpenAI", "OpenAI client service") { }
 
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
-            pManager.AddTextParameter("API Key", "API", "The OpenAI API uses API keys for authentication. Visit your API Keys page to\r\n        //     retrieve the API key you'll use in your requests. Remember that your API key\r\n        //     is a secret! Do not share it with others or expose it in any client-side code(browsers,\r\n        //     apps). Production requests must be routed through your own backend server where\r\n        //     your API key can be securely loaded from an environment variable or key management\r\n        //     service.", GH_ParamAccess.item);
-            pManager.AddTextParameter("Organization Id", "Org", "For users who belong to multiple organizations, you can pass a header to specify\r\n        //     which organization is used for an API request. Usage from these API requests\r\n        //     will count against the specified organization's subscription quota. Organization\r\n        //     IDs can be found on your Organization settings page.", GH_ParamAccess.item);
+            pManager.AddTextParameter("API Key", "API", "The OpenAI API uses API keys for authentication. Visit your API Keys page to\r\nretrieve the API key you'll use in your requests. Remember that your API key\r\nis a secret! Do not share it with others or expose it in any client-side code(browsers,\r\napps). Production requests must be routed through your own backend server where\r\nyour API key can be securely loaded from an environment variable or key management\r\nservice.", GH_ParamAccess.item);
+            pManager.AddTextParameter("Organization Id", "Org", "For users who belong to multiple organizations, you can pass a header to specify\r\nwhich organization is used for an API request. Usage from these API requests\r\nwill count against the specified organization's subscription quota. Organization\r\nIDs can be found on your Organization settings page.", GH_ParamAccess.item);
             Params.Input[^1].Optional = true;
         }
 
@@ -205,7 +253,7 @@ namespace OpenAI_for_Grasshopper
         public override Guid ComponentGuid => new Guid("a5ca4009-9df2-4afd-81a9-404dba2533eb");
         public override GH_Exposure Exposure => GH_Exposure.primary;
 
-        public Comp_OpenAIModels() : base("Models", "Models", "List Open AI models") { }
+        public Comp_OpenAIModels() : base("Models", "Models", "List OpenAI models") { }
 
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
@@ -240,23 +288,25 @@ namespace OpenAI_for_Grasshopper
             DA.SetData(3, result);
         }
     }
+     
     #endregion
 
-    #region Expo2
-    public class Comp_OpenAICompletion : Comp_BaseResponse<CompletionCreateResponse>
+    #region Secondary
+    public class Comp_OpenAICompletion : Comp_BaseResponseWithMenuModels<CompletionCreateResponse>
     {
         public override Guid ComponentGuid => new Guid("7f25a457-5d97-470e-9193-ae58dc503477");
+        public override GH_Exposure Exposure => GH_Exposure.secondary;
 
-        public Comp_OpenAICompletion() : base("Completion", "Completion", "Given a prompt, the model will return one or more predicted completions, and can also return the probabilities of alternative tokens at each position.") { }
+        public Comp_OpenAICompletion() : base("Completion", "Completion", "Given a prompt, the model will return one or more predicted completions, and can also return the probabilities of alternative tokens at each position.",
+            Utils.Models[ModelSubject.TextCompletion].Concat(Utils.Models[ModelSubject.CodeCompletion]).ToArray()) { }
 
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
-            pManager.AddParameter(new Param_OpenAIService());
-            pManager.AddTextParameter("Model", "Mod", "", GH_ParamAccess.item, "text-davinci-003");
+            pManager.AddParameter(new Param_OpenAIService()); 
             pManager.AddTextParameter("Prompts", "Prm", "", GH_ParamAccess.list);
-            pManager.AddIntegerParameter("Token Limit", "Lim", "The maximum number of tokens to generate in the completion. The token count of\r\n        //     your prompt plus max_tokens cannot exceed the model's context length. Most models\r\n        //     have a context length of 2048 tokens (except davinci-codex, which supports 4096).", GH_ParamAccess.item, 200);
-            pManager.AddNumberParameter("Temperature", "Tmp", "What sampling temperature to use. Higher values means the model will take more\r\n        //     risks. Try 0.9 for more creative applications, and 0 (argmax sampling) for ones\r\n        //     with a well-defined answer. We generally recommend altering this or top_p but\r\n        //     not both.", GH_ParamAccess.item, 0.5);
-            pManager.AddNumberParameter("TopP", "ToP", "An alternative to sampling with temperature, called nucleus sampling, where the\r\n        //     model considers the results of the tokens with top_p probability mass. So 0.1\r\n        //     means only the tokens comprising the top 10% probability mass are considered.\r\n        //     We generally recommend altering this or temperature but not both.", GH_ParamAccess.item, 0.5);
+            pManager.AddIntegerParameter("Token Limit", "Lim", "The maximum number of tokens to generate in the completion. The token count of\r\nyour prompt plus max_tokens cannot exceed the model's context length. Most models\r\nhave a context length of 2048 tokens (except davinci-codex, which supports 4096).", GH_ParamAccess.item, 200);
+            pManager.AddNumberParameter("Temperature", "Tmp", "What sampling temperature to use. Higher values means the model will take more\r\nrisks. Try 0.9 for more creative applications, and 0 (argmax sampling) for ones\r\nwith a well-defined answer. We generally recommend altering this or top_p but\r\nnot both.", GH_ParamAccess.item, 0.5);
+            pManager.AddNumberParameter("TopP", "ToP", "An alternative to sampling with temperature, called nucleus sampling, where the\r\nmodel considers the results of the tokens with top_p probability mass. So 0.1\r\nmeans only the tokens comprising the top 10% probability mass are considered.\r\nWe generally recommend altering this or temperature but not both.", GH_ParamAccess.item, 0.5);
             AddAskParameter(pManager);
         }
 
@@ -269,23 +319,22 @@ namespace OpenAI_for_Grasshopper
 
         protected override Task<CompletionCreateResponse> SolveInstanceInPreSolve(IGH_DataAccess DA, out bool ask)
         {
-            OpenAIService service = null;
-            string model = null;
+            OpenAIService service = null; 
             List<string> prompts = new List<string>();
             int tokenLimit = 100;
             double temperature = 0.5;
             double topP = 0.5;
             ask = false;
            
-            if (!DA.GetData(0, ref service) || !DA.GetData(1, ref model) || !DA.GetDataList(2, prompts) || !DA.GetData(3, ref tokenLimit) ||
-                  !DA.GetData(4, ref temperature) || !DA.GetData(5, ref topP) || !DA.GetData(6, ref ask)) {
+            if (!DA.GetData(0, ref service) || !DA.GetDataList(1, prompts) || !DA.GetData(2, ref tokenLimit) ||
+                  !DA.GetData(3, ref temperature) || !DA.GetData(4, ref topP) || !DA.GetData(5, ref ask)) {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Failed to get some input");
                 return null;
             }
            
             var request = new OpenAI.GPT3.ObjectModels.RequestModels.CompletionCreateRequest() {
                 PromptAsList = prompts,
-                Model = model, 
+                Model = SelectedModel, 
                 MaxTokens = tokenLimit,
                 Temperature = (float)Math.Max(0, Math.Min(1, temperature)),
                 TopP = (float)Math.Max(0, Math.Min(1, topP)),
@@ -302,17 +351,21 @@ namespace OpenAI_for_Grasshopper
         }
     }
 
-    public class Comp_OpenAIEmbeddings : Comp_BaseResponse<EmbeddingCreateResponse>
+    public class Comp_OpenAIChat : Comp_BaseResponseWithMenuModels<ChatCompletionCreateResponse>
     {
-        public override Guid ComponentGuid => new Guid("8f2fcdb1-f8a7-4f23-b252-37af1c44a547");
+        public override Guid ComponentGuid => new Guid("62b04def-2904-4669-ae68-2bc9a75d09cc");
+        public override GH_Exposure Exposure => GH_Exposure.secondary;
 
-        public Comp_OpenAIEmbeddings() : base("Embedding", "Embedding", "Get a vector representation of a given input that can be easily consumed by machine learning models and algorithms.") { }
+        public Comp_OpenAIChat() : base("Chat GPT", "Chat GPT", "Given a prompt, the model will return one or more predicted completions, and can also return the probabilities of alternative tokens at each position.",
+            Utils.Models[ModelSubject.ChatCompletion]) { }
 
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
             pManager.AddParameter(new Param_OpenAIService());
-            pManager.AddTextParameter("Model", "Mod", "ID of the model to use. You can use the [List models](/docs/api-reference/models/list)\r\n        //     API to see all of your available models, or see our [Model overview](/docs/models/overview)\r\n        //     for descriptions of them.", GH_ParamAccess.item, "text-embedding-ada-002");
-            pManager.AddTextParameter("Inputs", "Inp", "Input text to get embeddings for, encoded as a string or array of tokens. To\r\n        //     get embeddings for multiple inputs in a single request, pass an array of strings\r\n        //     or array of token arrays. Each input must not exceed 2048 tokens in length. Unless\r\n        //     your are embedding code, we suggest replacing newlines (`\\n`) in your input with\r\n        //     a single space, as we have observed inferior results when newlines are present.", GH_ParamAccess.list);
+            pManager.AddParameter(new Param_ChatMessage(), "Messages", "M", "Role-based message", GH_ParamAccess.list);
+            pManager.AddIntegerParameter("Token Limit", "Lim", "The maximum number of tokens to generate in the completion. The token count of\r\nyour prompt plus max_tokens cannot exceed the model's context length. Most models\r\nhave a context length of 2048 tokens (except davinci-codex, which supports 4096).", GH_ParamAccess.item, 200);
+            pManager.AddNumberParameter("Temperature", "Tmp", "What sampling temperature to use. Higher values means the model will take more\r\nrisks. Try 0.9 for more creative applications, and 0 (argmax sampling) for ones\r\nwith a well-defined answer. We generally recommend altering this or top_p but\r\nnot both.", GH_ParamAccess.item, 0.5);
+            pManager.AddNumberParameter("TopP", "ToP", "An alternative to sampling with temperature, called nucleus sampling, where the\r\nmodel considers the results of the tokens with top_p probability mass. So 0.1\r\nmeans only the tokens comprising the top 10% probability mass are considered.\r\nWe generally recommend altering this or temperature but not both.", GH_ParamAccess.item, 0.5);
             AddAskParameter(pManager);
         }
 
@@ -323,41 +376,217 @@ namespace OpenAI_for_Grasshopper
             pManager.AddParameter(new Param_BaseResponse());
         }
 
-        protected override Task<EmbeddingCreateResponse> SolveInstanceInPreSolve(IGH_DataAccess DA, out bool ask)
+        protected override Task<ChatCompletionCreateResponse> SolveInstanceInPreSolve(IGH_DataAccess DA, out bool ask)
         {
-            OpenAIService service = null;
-            string model = null;
-            List<string> prompts = new List<string>();
+            OpenAIService service = null; 
+            List<ChatMessage> messages = new List<ChatMessage>();
+            int tokenLimit = 100;
+            double temperature = 0.5;
+            double topP = 0.5;
             ask = false;
-            if (!DA.GetData(0, ref service) || !DA.GetData(1, ref model) || !DA.GetDataList(2, prompts) || !DA.GetData(3, ref ask)) {
+
+            if (!DA.GetData(0, ref service) || !DA.GetDataList(1, messages) || !DA.GetData(2, ref tokenLimit) ||
+                  !DA.GetData(3, ref temperature) || !DA.GetData(4, ref topP) || !DA.GetData(5, ref ask)) {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Failed to get some input");
                 return null;
             }
-            var request = new OpenAI.GPT3.ObjectModels.RequestModels.EmbeddingCreateRequest() {
-                InputAsList = prompts,
-                Model = model,
-            };
-            return Task.Run(() => service.CreateEmbedding(request), CancelToken);
+
+            var request = new OpenAI.GPT3.ObjectModels.RequestModels.ChatCompletionCreateRequest() {
+                Messages = messages,
+                Model = SelectedModel,
+                MaxTokens = tokenLimit,
+                Temperature = (float)Math.Max(0, Math.Min(1, temperature)),
+                TopP = (float)Math.Max(0, Math.Min(1, topP)), 
+            }; 
+            return Task.Run(() => service.CreateCompletion(request), CancelToken);
+
         }
 
-        protected override void SolveInstanceInPostSolve(IGH_DataAccess DA, EmbeddingCreateResponse result)
+        protected override void SolveInstanceInPostSolve(IGH_DataAccess DA, ChatCompletionCreateResponse result)
         {
-            var tree = new DataTree<double>();
-            if(result.Data != null) {
-                for (int i = 0; i < result.Data.Count; i++) {
-                    var path = new GH_Path(DA.Iteration, i); 
-                    tree.AddRange(result.Data[i].Embedding, path);
-                }
-            } 
-            DA.SetDataTree(0, tree);
-            DA.SetData(1, result?.Usage.TotalTokens);
+            DA.SetDataList(0, result.Choices.Select(c => c.Message.Content));
+            DA.SetData(1, result.Usage.TotalTokens);
             DA.SetData(2, result);
         }
-    }
 
+        public override void AddedToDocument(GH_Document document)
+        {
+            base.AddedToDocument(document);
+            var param = this.Params.Input[1] as Param_ChatMessage;
+            if (param.SourceCount == 0 && param.PersistentDataCount == 0) {
+                var comp = new Comp_ChatMessageArray();
+                comp.CreateAttributes();
+                comp.Attributes.PerformLayout();
+                var output = comp.Params.Output[0]; 
+
+                param.AddSource(output);
+                var pivot = this.Attributes.Pivot;
+                pivot.X = pivot.X - comp.Attributes.Bounds.Width/ 2f - this.Attributes.Bounds.Width / 2f - 50;
+                pivot.Y -= comp.Attributes.Bounds.Height / 2f - 2;
+                comp.Attributes.Pivot = pivot;
+                comp.Attributes.ExpireLayout();
+                comp.Attributes.PerformLayout();
+                this.OnPingDocument().AddObject(comp, true);
+            }
+        }
+
+    }
+    /*
+    public class Comp_ChatMessage : Comp_Base
+    {
+        public override Guid ComponentGuid => new Guid("54e9cd9a-381b-4cfb-8605-38042fe03f86");
+        public override GH_Exposure Exposure => GH_Exposure.secondary;
+
+        public Comp_ChatMessage() : base("Chat Message", "Chat Message", "Create a message for ChatGPT") { }
+
+        protected override void RegisterInputParams(GH_InputParamManager pManager)
+        {
+            pManager.AddTextParameter("Content", "T", "Text content or message", GH_ParamAccess.item);
+            pManager.AddIntegerParameter("Role", "R", "0 = User, 1 = Assistant, 2 = System", GH_ParamAccess.item, 0);
+        }
+
+        protected override void RegisterOutputParams(GH_OutputParamManager pManager)
+        {
+            pManager.AddParameter(new Param_ChatMessage(), "ChatGPT Message", "M", "ChatGPT message", GH_ParamAccess.item);
+        }
+
+        private bool _singleRun;
+
+        protected override void BeforeSolveInstance()
+        {
+            base.BeforeSolveInstance();
+            var input = (Grasshopper.Kernel.Parameters.Param_Integer)Params.Input[1];
+            _singleRun = input.VolatileDataCount < 2 && input.PersistentDataCount < 2;
+        }
+
+        protected override void SolveInstance(IGH_DataAccess DA)
+        {
+            var text = string.Empty;
+            var role = 0;
+            if (!DA.GetData(0, ref text) || !DA.GetData(1, ref role)) {
+                return;
+            }
+            if (role < 0) role = 0;
+            else if (role > 2) role = 2;
+
+            OpenAI.GPT3.ObjectModels.RequestModels.ChatMessage message = null;
+
+            Message = string.Empty;
+
+            switch (role) {
+                case 0:
+                default:
+                    message = OpenAI.GPT3.ObjectModels.RequestModels.ChatMessage.FromUser(text);
+                    if (_singleRun) {
+                        Message = "User";
+                    }
+                    break;
+                case 1:
+                    message = OpenAI.GPT3.ObjectModels.RequestModels.ChatMessage.FromAssistant(text);
+                    if (_singleRun) {
+                        Message = "Assistant";
+                    }
+                    break;
+                case 2:
+                    message = OpenAI.GPT3.ObjectModels.RequestModels.ChatMessage.FromSystem(text);
+                    if (_singleRun) {
+                        Message = "System";
+                    }
+                    break;
+
+            }
+
+            Grasshopper.Instances.RedrawCanvas();
+
+            DA.SetData(0, message);
+        }
+
+    }
+    */
+    public class Comp_ChatMessageArray : Comp_Base, IGH_VariableParameterComponent
+    {
+        public override Guid ComponentGuid => new Guid("ac4df529-d20f-4021-a18a-1f54a92353c5");
+        public override GH_Exposure Exposure => GH_Exposure.secondary;
+
+        public Comp_ChatMessageArray() : base("Chat Messages", "Chat Messages", "Create a message array or conversation for ChatGPT") { }
+
+        protected override void RegisterInputParams(GH_InputParamManager pManager)
+        {
+            pManager.AddTextParameter("System Message", "S", "Message with the system role, for example how ChatGPT should act.", GH_ParamAccess.item, "You are a helpful assistant.");
+            pManager.AddTextParameter("User Message", "U", "Message with the user role, for example what you want to ask to ChatGPT.", GH_ParamAccess.item);
+            pManager.AddTextParameter("Assistant Message", "A", "Message with the assistant role, for example how ChatGPT should respond.", GH_ParamAccess.item);
+            
+        }
+
+        protected override void RegisterOutputParams(GH_OutputParamManager pManager)
+        {
+            pManager.AddParameter(new Param_ChatMessage(), "ChatGPT Messages", "M", "ChatGPT messages", GH_ParamAccess.list);
+        }
+         
+        protected override void SolveInstance(IGH_DataAccess DA)
+        {
+            var array = new List<OpenAI.GPT3.ObjectModels.RequestModels.ChatMessage>();
+
+            var system = string.Empty;
+            if(DA.GetData(0, ref system) && !string.IsNullOrEmpty(system)) {
+                array.Add(OpenAI.GPT3.ObjectModels.RequestModels.ChatMessage.FromSystem(system));
+            } 
+
+            for (int i = 1; i < this.Params.Input.Count; i++) {
+                var text = string.Empty;
+                if(DA.GetData(i, ref text)) {
+
+                    if (this.Params.Input[i].Name.Contains("User")) {
+                        array.Add(OpenAI.GPT3.ObjectModels.RequestModels.ChatMessage.FromUser(text));
+                    } else {
+                        array.Add(OpenAI.GPT3.ObjectModels.RequestModels.ChatMessage.FromAssistant(text));
+                    }
+                }
+              
+            }
+            
+            DA.SetDataList(0, array);
+        }
+
+
+        public bool CanInsertParameter(GH_ParameterSide side, int index)
+        {
+            return side == GH_ParameterSide.Input && index > 2;
+        }
+
+        public bool CanRemoveParameter(GH_ParameterSide side, int index)
+        {
+            return side == GH_ParameterSide.Input && index > 0;
+        }
+
+        public IGH_Param CreateParameter(GH_ParameterSide side, int index)
+        {
+            var role = index % 2 == 1 ? "User" : "Assistant";
+            var param = new Grasshopper.Kernel.Parameters.Param_String()
+            { 
+                Name = role + " Message",
+                NickName = role[0].ToString(),
+                Description = $"Message with the {role.ToLower()} role"
+            };
+            return param;
+        }
+
+        public bool DestroyParameter(GH_ParameterSide side, int index)
+        {
+            return true;
+        }
+
+        public void VariableParameterMaintenance()
+        { 
+        }
+    }
+    #endregion
+
+    #region Tertiary 
     public class Comp_OpenAIImage : Comp_BaseResponse<ImageCreateResponse>
     {
         public override Guid ComponentGuid => new Guid("770be8e7-7cf5-4a83-9175-2fd6064ab4d4");
+        public override GH_Exposure Exposure => GH_Exposure.tertiary;
 
         public Comp_OpenAIImage() : base("Image", "Image", "Given a prompt and/or an input image, the model will generate a new image.") { }
 
@@ -435,6 +664,7 @@ namespace OpenAI_for_Grasshopper
     public class Comp_OpenAIImageVariation : Comp_BaseResponse<ImageCreateResponse>
     {
         public override Guid ComponentGuid => new Guid("803e728d-ea2c-46a3-8c72-d3ec892f4483");
+        public override GH_Exposure Exposure => GH_Exposure.tertiary;
 
         public Comp_OpenAIImageVariation() : base("Image Variation", "Image Variation", "Creates a variation of a given image.") { }
 
@@ -539,6 +769,7 @@ namespace OpenAI_for_Grasshopper
     public class Comp_OpenAIImageEdit: Comp_BaseResponse<ImageCreateResponse>
     {
         public override Guid ComponentGuid => new Guid("a51f075a-6729-43e2-8b12-5a8bd3aabbdf");
+        public override GH_Exposure Exposure => GH_Exposure.tertiary;
 
         public Comp_OpenAIImageEdit() : base("Image Edit", "Image Edit", "Creates an edited or extended image given an original image and a prompt.") { }
 
@@ -546,7 +777,7 @@ namespace OpenAI_for_Grasshopper
         {
             pManager.AddParameter(new Param_OpenAIService());
             pManager.AddGenericParameter("Image", "Img", "Bitmap or file path or base64 image. Must be png, less than 4MB and square", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Mask", "Msk", "An additional image whose fully transparent areas (e.g. where alpha is zero)\r\n        //     indicate where image should be edited. Must be a valid PNG file, less than 4MB,\r\n        //     and have the same dimensions as image.", GH_ParamAccess.item);
+            pManager.AddGenericParameter("Mask", "Msk", "An additional image whose fully transparent areas (e.g. where alpha is zero)\r\nindicate where image should be edited. Must be a valid PNG file, less than 4MB,\r\nand have the same dimensions as image.", GH_ParamAccess.item);
             pManager.AddTextParameter("Prompt", "Prm", "A text description of the desired image(s). The maximum length is 1000 characters.", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Count", "Cnt", "The number of images to generate. Must be between 1 and 10.", GH_ParamAccess.item, 1);
             pManager.AddTextParameter("Size", "Sze", "The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024.", GH_ParamAccess.item, "256x256");
@@ -670,11 +901,67 @@ namespace OpenAI_for_Grasshopper
     }
     #endregion
 
-    #region Expo3
+    #region Quarternary
+    public class Comp_OpenAIEmbeddings : Comp_BaseResponseWithMenuModels<EmbeddingCreateResponse>
+    {
+        public override Guid ComponentGuid => new Guid("8f2fcdb1-f8a7-4f23-b252-37af1c44a547");
+        public override GH_Exposure Exposure => GH_Exposure.quarternary;
+
+        public Comp_OpenAIEmbeddings() : base("Embedding", "Embedding", "Get a vector representation of a given input that can be easily consumed by machine learning models and algorithms.",
+            Utils.Models[ModelSubject.Embedding]) { }
+
+        protected override void RegisterInputParams(GH_InputParamManager pManager)
+        {
+            pManager.AddParameter(new Param_OpenAIService());
+            pManager.AddTextParameter("Inputs", "Inp", "Input text to get embeddings for, encoded as a string or array of tokens. To\r\nget embeddings for multiple inputs in a single request, pass an array of strings\r\nor array of token arrays. Each input must not exceed 2048 tokens in length. Unless\r\nyour are embedding code, we suggest replacing newlines (`\\n`) in your input with\r\na single space, as we have observed inferior results when newlines are present.", GH_ParamAccess.list);
+            AddAskParameter(pManager);
+        }
+
+        protected override void RegisterOutputParams(GH_OutputParamManager pManager)
+        {
+            pManager.AddTextParameter("Result", "R", "", GH_ParamAccess.list);
+            pManager.AddIntegerParameter("Usage", "U", "Total tokens of usage", GH_ParamAccess.item);
+            pManager.AddParameter(new Param_BaseResponse());
+        }
+
+        protected override Task<EmbeddingCreateResponse> SolveInstanceInPreSolve(IGH_DataAccess DA, out bool ask)
+        {
+            OpenAIService service = null; 
+            List<string> prompts = new List<string>();
+            ask = false;
+            if (!DA.GetData(0, ref service) || !DA.GetDataList(1, prompts) || !DA.GetData(2, ref ask)) {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Failed to get some input");
+                return null;
+            }
+            var request = new OpenAI.GPT3.ObjectModels.RequestModels.EmbeddingCreateRequest() {
+                InputAsList = prompts,
+                Model = SelectedModel,
+            };
+            return Task.Run(() => service.CreateEmbedding(request), CancelToken);
+        }
+
+        protected override void SolveInstanceInPostSolve(IGH_DataAccess DA, EmbeddingCreateResponse result)
+        {
+            var tree = new DataTree<double>();
+            if (result.Data != null) {
+                for (int i = 0; i < result.Data.Count; i++) {
+                    var path = new GH_Path(DA.Iteration, i);
+                    tree.AddRange(result.Data[i].Embedding, path);
+                }
+            }
+            DA.SetDataTree(0, tree);
+            DA.SetData(1, result?.Usage.TotalTokens);
+            DA.SetData(2, result);
+        }
+    }
+
+    #endregion
+
+    #region Quinary
     public class Comp_OpenAIFileUpload : Comp_BaseResponse<FileUploadResponse>
     {
         public override Guid ComponentGuid => new Guid("c4c72855-ddd6-4c48-ae34-3a5557a8a363");
-        public override GH_Exposure Exposure => GH_Exposure.tertiary;
+        public override GH_Exposure Exposure => GH_Exposure.quinary;
 
         public Comp_OpenAIFileUpload() : base("File Upload", "File Upload", "Upload a file that contains document(s) to be used across various endpoints/features. Currently, the size of all the files uploaded by one organization can be up to 1 GB.") { }
 
@@ -723,7 +1010,7 @@ namespace OpenAI_for_Grasshopper
     public class Comp_OpenAIFileList : Comp_BaseResponse<FileListResponse>
     {
         public override Guid ComponentGuid => new Guid("0d517bcd-731f-4c45-9e95-ae01583e1d23");
-        public override GH_Exposure Exposure => GH_Exposure.tertiary;
+        public override GH_Exposure Exposure => GH_Exposure.quinary;
 
         public Comp_OpenAIFileList() : base("File List", "File List", "Returns a list of files that belong to the user's organization.") { }
 
@@ -772,7 +1059,7 @@ namespace OpenAI_for_Grasshopper
     public class Comp_OpenAIDeleteFile : Comp_BaseResponse<FileDeleteResponse>
     {
         public override Guid ComponentGuid => new Guid("8daa60d7-8c4e-480b-8582-8e5d2875545f");
-        public override GH_Exposure Exposure => GH_Exposure.tertiary;
+        public override GH_Exposure Exposure => GH_Exposure.quinary;
 
         public Comp_OpenAIDeleteFile() : base("Delete File", "Delete File", "Delete a file") { }
 
@@ -811,7 +1098,7 @@ namespace OpenAI_for_Grasshopper
     public class Comp_OpenAIRetrieveFile : Comp_BaseResponse<FileResponse>
     {
         public override Guid ComponentGuid => new Guid("9a7b9a00-b9b0-4ed7-9d57-096bd29b2d87");
-        public override GH_Exposure Exposure => GH_Exposure.tertiary;
+        public override GH_Exposure Exposure => GH_Exposure.quinary;
 
         public Comp_OpenAIRetrieveFile() : base("Retrieve File", "Retrieve File", "Returns information about a specific file.") { }
 
@@ -849,18 +1136,20 @@ namespace OpenAI_for_Grasshopper
             DA.SetData(2, result);
         }
     }
+    #endregion
 
-    public class Comp_OpenAIFineTune : Comp_BaseResponse<FineTuneResponse>
+    #region Senary
+    public class Comp_OpenAIFineTune : Comp_BaseResponseWithMenuModels<FineTuneResponse>
     {
         public override Guid ComponentGuid => new Guid("96fbc303-38db-4332-9d75-32b4784180f5");
-        public override GH_Exposure Exposure => GH_Exposure.tertiary;
+        public override GH_Exposure Exposure => GH_Exposure.senary;
 
-        public Comp_OpenAIFineTune() : base("Fine Tune", "Fine Tune", "Manage fine-tuning jobs to tailor a model to your specific training data.") { }
+        public Comp_OpenAIFineTune() : base("Fine Tune", "Fine Tune", "Manage fine-tuning jobs to tailor a model to your specific training data.",
+            Utils.Models[ModelSubject.FineTunning]) { }
 
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
-            pManager.AddParameter(new Param_OpenAIService());
-            pManager.AddTextParameter("Model", "Mod", "The name of the base model to fine-tune. You can select one of \"ada\", \"babbage\", \"curie\", \"davinci\", or a fine-tuned model created after 2022-04-21.", GH_ParamAccess.item, "text-davinci-003");
+            pManager.AddParameter(new Param_OpenAIService()); 
             pManager.AddTextParameter("File Id", "Id", "The ID of an uploaded file that contains training data.", GH_ParamAccess.item);
           AddAskParameter(pManager);
         }
@@ -873,18 +1162,17 @@ namespace OpenAI_for_Grasshopper
 
         protected override Task<FineTuneResponse> SolveInstanceInPreSolve(IGH_DataAccess DA, out bool ask)
         {
-            OpenAIService service = null;
-            string model = null;
+            OpenAIService service = null; 
             string id = null;
             ask = false;
 
-            if (!DA.GetData(0, ref service) || !DA.GetData(1, ref model) || !DA.GetData(2, ref id) ) {
+            if (!DA.GetData(0, ref service) || !DA.GetData(1, ref id) ) {
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "Failed to get some input");
                 return null;
             }
 
             var request = new OpenAI.GPT3.ObjectModels.RequestModels.FineTuneCreateRequest() {
-                Model = model, TrainingFile = id // TODO add more parameters
+                Model = SelectedModel, TrainingFile = id // TODO add more parameters
             };
             return Task.Run(() => service.CreateFineTune(request), CancelToken);
 
@@ -897,14 +1185,11 @@ namespace OpenAI_for_Grasshopper
             DA.SetData(1, result);
         }
     }
-
-    #endregion
-
-    #region Expo4
+  
     public class Comp_ExplodeResponse : Comp_Base
     {
         public override Guid ComponentGuid => new Guid("ea34ac54-f551-40e7-8c98-d2cbe2ffd27f");
-        public override GH_Exposure Exposure => GH_Exposure.quarternary;
+        public override GH_Exposure Exposure => GH_Exposure.senary;
 
         public Comp_ExplodeResponse() : base("Explode Response", "ExpResponse", "Explode a BaseResponse into its properties") { }
 
@@ -930,16 +1215,46 @@ namespace OpenAI_for_Grasshopper
                 return;
 
             DA.SetData(0, response.Successful);
-            if(response is IOpenAiModels.IId id) {
+            if (response is IOpenAiModels.IId id) {
                 DA.SetData(1, id.Id);
             }
             if (response is IOpenAiModels.IModel model) {
                 DA.SetData(2, model.Model);
-            } 
+            }
             DA.SetData(3, response.ObjectTypeName);
             DA.SetData(4, response.Error?.Message);
         }
     }
+    
+    public class Comp_Tokenizer : Comp_Base
+    {
+        public override Guid ComponentGuid => new Guid("fba0d734-0e1a-4404-aaa5-8fc0b71a7122");
+        public override GH_Exposure Exposure => GH_Exposure.senary;
+
+        public Comp_Tokenizer() : base("Tokenizer", "Tokenizer", "Encode text to count the number of tokens") { }
+
+        protected override void RegisterInputParams(GH_InputParamManager pManager)
+        {
+            pManager.AddTextParameter("Text", "T", "Text to tokenize", GH_ParamAccess.item);
+        }
+
+        protected override void RegisterOutputParams(GH_OutputParamManager pManager)
+        {
+            pManager.AddIntegerParameter("Tokens", "T", "Number of encoded tokens", GH_ParamAccess.list); 
+        }
+
+        protected override void SolveInstance(IGH_DataAccess DA)
+        {
+            var text = string.Empty;
+            if(!DA.GetData(0, ref text)) {
+                return;
+            }
+
+            var tokens = OpenAI.GPT3.Tokenizer.GPT3.TokenizerGpt3.Encode(text);
+
+            DA.SetDataList(0, tokens);
+        }
+    }
     #endregion
-     
+
 }
