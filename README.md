@@ -34,3 +34,8 @@ Keep in mind that it is still a work in progress, not everything has been tested
 ### Collaborate
 - Issues and pull request are welcome.
 - Contact me via Discord: DaniGA#9856.
+
+### Changelog
+- v1.1.0
+    * Added support for ChatGPT and Codex models.
+    * Replaced model inputs with component menu selection (via right click).
