@@ -1,5 +1,7 @@
 # OpenAI for Grasshopper
 
+*https://discourse.mcneel.com/t/open-ai-for-grasshopper-gha*
+
 This Grasshopper plugin (.gha) is an integration of the OpenAI API for .NET: https://github.com/betalgo/openai that I made quickly to play with the OpenAI API from Grasshopper (Rhino 8).
 
 Keep in mind that it is still a work in progress, not everything has been tested, and it may not be continued. Also note that OpenAI has a paid API, so it's not free to use.
@@ -8,7 +10,7 @@ Keep in mind that it is still a work in progress, not everything has been tested
 
 ### Features
 - [x] ChatGPT
-- [x] Image (DALL·E)
+- [x] Image (DALLÂ·E)
 - [x] Models
 - [x] Completions
 - [x] Edit (uncomplete)
